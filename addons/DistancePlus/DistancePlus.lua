@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 _addon.name = 'DistancePlus'
 _addon.author = 'Sammeh'
-_addon.version = '1.3.0.10'
+_addon.version = '1.4.0.0'
 _addon.command = 'dp'
 
 -- 1.3.0.2 Fixed up nil's per recommendation on submission to Windower 
@@ -40,6 +40,7 @@ _addon.command = 'dp'
 -- 1.3.0.8 Wasn't refreshing 'self' upon job change.  Fixed up spacing.
 -- 1.3.0.9 Fixup MaxDecimal from config plugin addition.
 -- 1.3.0.10  Changed slightly some variable scopes for lower mem usage.
+-- 1.4.0.0 Add in Luopon Box with mobs within range.
 
 require('tables')
 
@@ -79,6 +80,16 @@ defaults.abilitytxt.text.size = 10
 defaults.abilitytxt.flags = {}
 defaults.abilitytxt.flags.right = true
 
+defaults.luopantxt = {}
+defaults.luopantxt.pos = {}
+defaults.luopantxt.pos.x = -238
+defaults.luopantxt.pos.y = 21
+defaults.luopantxt.text = {}
+defaults.luopantxt.text.font = 'Arial'
+defaults.luopantxt.text.size = 10
+defaults.luopantxt.flags = {}
+defaults.luopantxt.flags.right = true
+
 defaults.heighttxt = {}
 defaults.heighttxt.pos = {}
 defaults.heighttxt.pos.x = -238
@@ -97,12 +108,14 @@ settings = config.load(defaults)
 distance = texts.new('${value||%.2f}', settings.main)
 petdistance = texts.new('${value||%.2f}', settings.pettxt)
 abilities = texts.new('${value}', settings.abilitytxt)
+luopan = texts.new('${value}', settings.luopantxt)
 height = texts.new('${value||%.2f}', settings.heighttxt)
 
 
 option = "Default"
 showabilities = false
 showheight = false
+luopanlist = {}
 
 function displayabilities(distance,master_pet_distance,s,t)
     local range_mult = {
@@ -216,6 +229,22 @@ windower.register_event('prerender', function()
         else
             displayabilities(t.distance:sqrt(),nil,s,t)
         end
+        
+        if t.name == "Luopan" then
+			-- Get all mobs in range of loupan
+            local luopan_txtbox = 'Luopan List: '
+            for i,v in pairs(windower.ffxi.get_mob_array()) do
+                local DistanceBetween = ((t.x - v.x)*(t.x-v.x) + (t.y-v.y)*(t.y-v.y)):sqrt()
+                if DistanceBetween < (6 + s.model_size) and (v.status == 1 or v.status == 0) and v.name ~= "" and v.name ~= nil and v.name ~= "Luopan" then 
+                    luopan_txtbox = luopan_txtbox.."\n"..v.name.." "..string.format("%.2f",DistanceBetween)
+                end 
+            end
+            luopan.value = luopan_txtbox
+            luopan:visible(true)
+        else 
+            luopan:visible(false)
+        end
+        
         if t.distance:sqrt() == 0 then
             distance:color(255,255,255)
         else
